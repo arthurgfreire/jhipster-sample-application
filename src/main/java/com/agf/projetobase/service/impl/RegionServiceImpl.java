@@ -4,12 +4,15 @@ import com.agf.projetobase.service.RegionService;
 import com.agf.projetobase.domain.Region;
 import com.agf.projetobase.repository.RegionRepository;
 import com.agf.projetobase.repository.search.RegionSearchRepository;
+import com.agf.projetobase.service.dto.RegionDTO;
+import com.agf.projetobase.service.mapper.RegionMapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
@@ -28,24 +31,29 @@ public class RegionServiceImpl implements RegionService {
 
     private final RegionRepository regionRepository;
 
+    private final RegionMapper regionMapper;
+
     private final RegionSearchRepository regionSearchRepository;
 
-    public RegionServiceImpl(RegionRepository regionRepository, RegionSearchRepository regionSearchRepository) {
+    public RegionServiceImpl(RegionRepository regionRepository, RegionMapper regionMapper, RegionSearchRepository regionSearchRepository) {
         this.regionRepository = regionRepository;
+        this.regionMapper = regionMapper;
         this.regionSearchRepository = regionSearchRepository;
     }
 
     /**
      * Save a region.
      *
-     * @param region the entity to save.
+     * @param regionDTO the entity to save.
      * @return the persisted entity.
      */
     @Override
-    public Region save(Region region) {
-        log.debug("Request to save Region : {}", region);
-        Region result = regionRepository.save(region);
-        regionSearchRepository.save(result);
+    public RegionDTO save(RegionDTO regionDTO) {
+        log.debug("Request to save Region : {}", regionDTO);
+        Region region = regionMapper.toEntity(regionDTO);
+        region = regionRepository.save(region);
+        RegionDTO result = regionMapper.toDto(region);
+        regionSearchRepository.save(region);
         return result;
     }
 
@@ -56,9 +64,11 @@ public class RegionServiceImpl implements RegionService {
      */
     @Override
     @Transactional(readOnly = true)
-    public List<Region> findAll() {
+    public List<RegionDTO> findAll() {
         log.debug("Request to get all Regions");
-        return regionRepository.findAll();
+        return regionRepository.findAll().stream()
+            .map(regionMapper::toDto)
+            .collect(Collectors.toCollection(LinkedList::new));
     }
 
 
@@ -70,9 +80,10 @@ public class RegionServiceImpl implements RegionService {
      */
     @Override
     @Transactional(readOnly = true)
-    public Optional<Region> findOne(Long id) {
+    public Optional<RegionDTO> findOne(Long id) {
         log.debug("Request to get Region : {}", id);
-        return regionRepository.findById(id);
+        return regionRepository.findById(id)
+            .map(regionMapper::toDto);
     }
 
     /**
@@ -96,10 +107,11 @@ public class RegionServiceImpl implements RegionService {
      */
     @Override
     @Transactional(readOnly = true)
-    public List<Region> search(String query) {
+    public List<RegionDTO> search(String query) {
         log.debug("Request to search Regions for query {}", query);
         return StreamSupport
             .stream(regionSearchRepository.search(queryStringQuery(query)).spliterator(), false)
+            .map(regionMapper::toDto)
         .collect(Collectors.toList());
     }
 }

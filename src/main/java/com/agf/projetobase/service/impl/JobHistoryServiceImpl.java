@@ -4,6 +4,8 @@ import com.agf.projetobase.service.JobHistoryService;
 import com.agf.projetobase.domain.JobHistory;
 import com.agf.projetobase.repository.JobHistoryRepository;
 import com.agf.projetobase.repository.search.JobHistorySearchRepository;
+import com.agf.projetobase.service.dto.JobHistoryDTO;
+import com.agf.projetobase.service.mapper.JobHistoryMapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -27,24 +29,29 @@ public class JobHistoryServiceImpl implements JobHistoryService {
 
     private final JobHistoryRepository jobHistoryRepository;
 
+    private final JobHistoryMapper jobHistoryMapper;
+
     private final JobHistorySearchRepository jobHistorySearchRepository;
 
-    public JobHistoryServiceImpl(JobHistoryRepository jobHistoryRepository, JobHistorySearchRepository jobHistorySearchRepository) {
+    public JobHistoryServiceImpl(JobHistoryRepository jobHistoryRepository, JobHistoryMapper jobHistoryMapper, JobHistorySearchRepository jobHistorySearchRepository) {
         this.jobHistoryRepository = jobHistoryRepository;
+        this.jobHistoryMapper = jobHistoryMapper;
         this.jobHistorySearchRepository = jobHistorySearchRepository;
     }
 
     /**
      * Save a jobHistory.
      *
-     * @param jobHistory the entity to save.
+     * @param jobHistoryDTO the entity to save.
      * @return the persisted entity.
      */
     @Override
-    public JobHistory save(JobHistory jobHistory) {
-        log.debug("Request to save JobHistory : {}", jobHistory);
-        JobHistory result = jobHistoryRepository.save(jobHistory);
-        jobHistorySearchRepository.save(result);
+    public JobHistoryDTO save(JobHistoryDTO jobHistoryDTO) {
+        log.debug("Request to save JobHistory : {}", jobHistoryDTO);
+        JobHistory jobHistory = jobHistoryMapper.toEntity(jobHistoryDTO);
+        jobHistory = jobHistoryRepository.save(jobHistory);
+        JobHistoryDTO result = jobHistoryMapper.toDto(jobHistory);
+        jobHistorySearchRepository.save(jobHistory);
         return result;
     }
 
@@ -56,9 +63,10 @@ public class JobHistoryServiceImpl implements JobHistoryService {
      */
     @Override
     @Transactional(readOnly = true)
-    public Page<JobHistory> findAll(Pageable pageable) {
+    public Page<JobHistoryDTO> findAll(Pageable pageable) {
         log.debug("Request to get all JobHistories");
-        return jobHistoryRepository.findAll(pageable);
+        return jobHistoryRepository.findAll(pageable)
+            .map(jobHistoryMapper::toDto);
     }
 
 
@@ -70,9 +78,10 @@ public class JobHistoryServiceImpl implements JobHistoryService {
      */
     @Override
     @Transactional(readOnly = true)
-    public Optional<JobHistory> findOne(Long id) {
+    public Optional<JobHistoryDTO> findOne(Long id) {
         log.debug("Request to get JobHistory : {}", id);
-        return jobHistoryRepository.findById(id);
+        return jobHistoryRepository.findById(id)
+            .map(jobHistoryMapper::toDto);
     }
 
     /**
@@ -97,7 +106,9 @@ public class JobHistoryServiceImpl implements JobHistoryService {
      */
     @Override
     @Transactional(readOnly = true)
-    public Page<JobHistory> search(String query, Pageable pageable) {
+    public Page<JobHistoryDTO> search(String query, Pageable pageable) {
         log.debug("Request to search for a page of JobHistories for query {}", query);
-        return jobHistorySearchRepository.search(queryStringQuery(query), pageable);    }
+        return jobHistorySearchRepository.search(queryStringQuery(query), pageable)
+            .map(jobHistoryMapper::toDto);
+    }
 }

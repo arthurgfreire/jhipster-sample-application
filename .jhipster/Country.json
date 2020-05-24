@@ -18,7 +18,7 @@
   ],
   "changelogDate": "20200524004007",
   "entityTableName": "country",
-  "dto": "no",
+  "dto": "mapstruct",
   "pagination": "no",
   "service": "serviceImpl",
   "jpaMetamodelFiltering": false,

@@ -9,7 +9,7 @@
   "relationships": [],
   "changelogDate": "20200524003907",
   "entityTableName": "region",
-  "dto": "no",
+  "dto": "mapstruct",
   "pagination": "no",
   "service": "serviceImpl",
   "jpaMetamodelFiltering": false,

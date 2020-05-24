@@ -4,6 +4,9 @@ import com.agf.projetobase.JhipsterSampleApplicationApp;
 import com.agf.projetobase.domain.Employee;
 import com.agf.projetobase.repository.EmployeeRepository;
 import com.agf.projetobase.repository.search.EmployeeSearchRepository;
+import com.agf.projetobase.service.EmployeeService;
+import com.agf.projetobase.service.dto.EmployeeDTO;
+import com.agf.projetobase.service.mapper.EmployeeMapper;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -64,6 +67,12 @@ public class EmployeeResourceIT {
 
     @Autowired
     private EmployeeRepository employeeRepository;
+
+    @Autowired
+    private EmployeeMapper employeeMapper;
+
+    @Autowired
+    private EmployeeService employeeService;
 
     /**
      * This repository is mocked in the com.agf.projetobase.repository.search test package.
@@ -126,9 +135,10 @@ public class EmployeeResourceIT {
     public void createEmployee() throws Exception {
         int databaseSizeBeforeCreate = employeeRepository.findAll().size();
         // Create the Employee
+        EmployeeDTO employeeDTO = employeeMapper.toDto(employee);
         restEmployeeMockMvc.perform(post("/api/employees")
             .contentType(MediaType.APPLICATION_JSON)
-            .content(TestUtil.convertObjectToJsonBytes(employee)))
+            .content(TestUtil.convertObjectToJsonBytes(employeeDTO)))
             .andExpect(status().isCreated());
 
         // Validate the Employee in the database
@@ -154,11 +164,12 @@ public class EmployeeResourceIT {
 
         // Create the Employee with an existing ID
         employee.setId(1L);
+        EmployeeDTO employeeDTO = employeeMapper.toDto(employee);
 
         // An entity with an existing ID cannot be created, so this API call must fail
         restEmployeeMockMvc.perform(post("/api/employees")
             .contentType(MediaType.APPLICATION_JSON)
-            .content(TestUtil.convertObjectToJsonBytes(employee)))
+            .content(TestUtil.convertObjectToJsonBytes(employeeDTO)))
             .andExpect(status().isBadRequest());
 
         // Validate the Employee in the database
@@ -237,10 +248,11 @@ public class EmployeeResourceIT {
             .hireDate(UPDATED_HIRE_DATE)
             .salary(UPDATED_SALARY)
             .commissionPct(UPDATED_COMMISSION_PCT);
+        EmployeeDTO employeeDTO = employeeMapper.toDto(updatedEmployee);
 
         restEmployeeMockMvc.perform(put("/api/employees")
             .contentType(MediaType.APPLICATION_JSON)
-            .content(TestUtil.convertObjectToJsonBytes(updatedEmployee)))
+            .content(TestUtil.convertObjectToJsonBytes(employeeDTO)))
             .andExpect(status().isOk());
 
         // Validate the Employee in the database
@@ -264,10 +276,13 @@ public class EmployeeResourceIT {
     public void updateNonExistingEmployee() throws Exception {
         int databaseSizeBeforeUpdate = employeeRepository.findAll().size();
 
+        // Create the Employee
+        EmployeeDTO employeeDTO = employeeMapper.toDto(employee);
+
         // If the entity doesn't have an ID, it will throw BadRequestAlertException
         restEmployeeMockMvc.perform(put("/api/employees")
             .contentType(MediaType.APPLICATION_JSON)
-            .content(TestUtil.convertObjectToJsonBytes(employee)))
+            .content(TestUtil.convertObjectToJsonBytes(employeeDTO)))
             .andExpect(status().isBadRequest());
 
         // Validate the Employee in the database
