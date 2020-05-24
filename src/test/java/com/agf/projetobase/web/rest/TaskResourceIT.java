@@ -5,6 +5,8 @@ import com.agf.projetobase.domain.Task;
 import com.agf.projetobase.repository.TaskRepository;
 import com.agf.projetobase.repository.search.TaskSearchRepository;
 import com.agf.projetobase.service.TaskService;
+import com.agf.projetobase.service.dto.TaskDTO;
+import com.agf.projetobase.service.mapper.TaskMapper;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -46,6 +48,9 @@ public class TaskResourceIT {
 
     @Autowired
     private TaskRepository taskRepository;
+
+    @Autowired
+    private TaskMapper taskMapper;
 
     @Autowired
     private TaskService taskService;
@@ -101,9 +106,10 @@ public class TaskResourceIT {
     public void createTask() throws Exception {
         int databaseSizeBeforeCreate = taskRepository.findAll().size();
         // Create the Task
+        TaskDTO taskDTO = taskMapper.toDto(task);
         restTaskMockMvc.perform(post("/api/tasks")
             .contentType(MediaType.APPLICATION_JSON)
-            .content(TestUtil.convertObjectToJsonBytes(task)))
+            .content(TestUtil.convertObjectToJsonBytes(taskDTO)))
             .andExpect(status().isCreated());
 
         // Validate the Task in the database
@@ -124,11 +130,12 @@ public class TaskResourceIT {
 
         // Create the Task with an existing ID
         task.setId(1L);
+        TaskDTO taskDTO = taskMapper.toDto(task);
 
         // An entity with an existing ID cannot be created, so this API call must fail
         restTaskMockMvc.perform(post("/api/tasks")
             .contentType(MediaType.APPLICATION_JSON)
-            .content(TestUtil.convertObjectToJsonBytes(task)))
+            .content(TestUtil.convertObjectToJsonBytes(taskDTO)))
             .andExpect(status().isBadRequest());
 
         // Validate the Task in the database
@@ -181,7 +188,7 @@ public class TaskResourceIT {
     @Transactional
     public void updateTask() throws Exception {
         // Initialize the database
-        taskService.save(task);
+        taskRepository.saveAndFlush(task);
 
         int databaseSizeBeforeUpdate = taskRepository.findAll().size();
 
@@ -192,10 +199,11 @@ public class TaskResourceIT {
         updatedTask
             .title(UPDATED_TITLE)
             .description(UPDATED_DESCRIPTION);
+        TaskDTO taskDTO = taskMapper.toDto(updatedTask);
 
         restTaskMockMvc.perform(put("/api/tasks")
             .contentType(MediaType.APPLICATION_JSON)
-            .content(TestUtil.convertObjectToJsonBytes(updatedTask)))
+            .content(TestUtil.convertObjectToJsonBytes(taskDTO)))
             .andExpect(status().isOk());
 
         // Validate the Task in the database
@@ -206,7 +214,7 @@ public class TaskResourceIT {
         assertThat(testTask.getDescription()).isEqualTo(UPDATED_DESCRIPTION);
 
         // Validate the Task in Elasticsearch
-        verify(mockTaskSearchRepository, times(2)).save(testTask);
+        verify(mockTaskSearchRepository, times(1)).save(testTask);
     }
 
     @Test
@@ -214,10 +222,13 @@ public class TaskResourceIT {
     public void updateNonExistingTask() throws Exception {
         int databaseSizeBeforeUpdate = taskRepository.findAll().size();
 
+        // Create the Task
+        TaskDTO taskDTO = taskMapper.toDto(task);
+
         // If the entity doesn't have an ID, it will throw BadRequestAlertException
         restTaskMockMvc.perform(put("/api/tasks")
             .contentType(MediaType.APPLICATION_JSON)
-            .content(TestUtil.convertObjectToJsonBytes(task)))
+            .content(TestUtil.convertObjectToJsonBytes(taskDTO)))
             .andExpect(status().isBadRequest());
 
         // Validate the Task in the database
@@ -232,7 +243,7 @@ public class TaskResourceIT {
     @Transactional
     public void deleteTask() throws Exception {
         // Initialize the database
-        taskService.save(task);
+        taskRepository.saveAndFlush(task);
 
         int databaseSizeBeforeDelete = taskRepository.findAll().size();
 
@@ -254,7 +265,7 @@ public class TaskResourceIT {
     public void searchTask() throws Exception {
         // Configure the mock search repository
         // Initialize the database
-        taskService.save(task);
+        taskRepository.saveAndFlush(task);
         when(mockTaskSearchRepository.search(queryStringQuery("id:" + task.getId())))
             .thenReturn(Collections.singletonList(task));
 

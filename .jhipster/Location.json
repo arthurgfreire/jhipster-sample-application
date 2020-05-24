@@ -31,7 +31,7 @@
   "changelogDate": "20200524004107",
   "javadoc": "not an ignored comment",
   "entityTableName": "location",
-  "dto": "no",
+  "dto": "mapstruct",
   "pagination": "no",
   "service": "serviceImpl",
   "jpaMetamodelFiltering": false,

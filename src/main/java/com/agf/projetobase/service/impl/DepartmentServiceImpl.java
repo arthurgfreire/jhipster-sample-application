@@ -4,12 +4,15 @@ import com.agf.projetobase.service.DepartmentService;
 import com.agf.projetobase.domain.Department;
 import com.agf.projetobase.repository.DepartmentRepository;
 import com.agf.projetobase.repository.search.DepartmentSearchRepository;
+import com.agf.projetobase.service.dto.DepartmentDTO;
+import com.agf.projetobase.service.mapper.DepartmentMapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
@@ -28,24 +31,29 @@ public class DepartmentServiceImpl implements DepartmentService {
 
     private final DepartmentRepository departmentRepository;
 
+    private final DepartmentMapper departmentMapper;
+
     private final DepartmentSearchRepository departmentSearchRepository;
 
-    public DepartmentServiceImpl(DepartmentRepository departmentRepository, DepartmentSearchRepository departmentSearchRepository) {
+    public DepartmentServiceImpl(DepartmentRepository departmentRepository, DepartmentMapper departmentMapper, DepartmentSearchRepository departmentSearchRepository) {
         this.departmentRepository = departmentRepository;
+        this.departmentMapper = departmentMapper;
         this.departmentSearchRepository = departmentSearchRepository;
     }
 
     /**
      * Save a department.
      *
-     * @param department the entity to save.
+     * @param departmentDTO the entity to save.
      * @return the persisted entity.
      */
     @Override
-    public Department save(Department department) {
-        log.debug("Request to save Department : {}", department);
-        Department result = departmentRepository.save(department);
-        departmentSearchRepository.save(result);
+    public DepartmentDTO save(DepartmentDTO departmentDTO) {
+        log.debug("Request to save Department : {}", departmentDTO);
+        Department department = departmentMapper.toEntity(departmentDTO);
+        department = departmentRepository.save(department);
+        DepartmentDTO result = departmentMapper.toDto(department);
+        departmentSearchRepository.save(department);
         return result;
     }
 
@@ -56,9 +64,11 @@ public class DepartmentServiceImpl implements DepartmentService {
      */
     @Override
     @Transactional(readOnly = true)
-    public List<Department> findAll() {
+    public List<DepartmentDTO> findAll() {
         log.debug("Request to get all Departments");
-        return departmentRepository.findAll();
+        return departmentRepository.findAll().stream()
+            .map(departmentMapper::toDto)
+            .collect(Collectors.toCollection(LinkedList::new));
     }
 
 
@@ -70,9 +80,10 @@ public class DepartmentServiceImpl implements DepartmentService {
      */
     @Override
     @Transactional(readOnly = true)
-    public Optional<Department> findOne(Long id) {
+    public Optional<DepartmentDTO> findOne(Long id) {
         log.debug("Request to get Department : {}", id);
-        return departmentRepository.findById(id);
+        return departmentRepository.findById(id)
+            .map(departmentMapper::toDto);
     }
 
     /**
@@ -96,10 +107,11 @@ public class DepartmentServiceImpl implements DepartmentService {
      */
     @Override
     @Transactional(readOnly = true)
-    public List<Department> search(String query) {
+    public List<DepartmentDTO> search(String query) {
         log.debug("Request to search Departments for query {}", query);
         return StreamSupport
             .stream(departmentSearchRepository.search(queryStringQuery(query)).spliterator(), false)
+            .map(departmentMapper::toDto)
         .collect(Collectors.toList());
     }
 }

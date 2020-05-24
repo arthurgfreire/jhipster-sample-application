@@ -4,12 +4,15 @@ import com.agf.projetobase.service.TaskService;
 import com.agf.projetobase.domain.Task;
 import com.agf.projetobase.repository.TaskRepository;
 import com.agf.projetobase.repository.search.TaskSearchRepository;
+import com.agf.projetobase.service.dto.TaskDTO;
+import com.agf.projetobase.service.mapper.TaskMapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
@@ -28,24 +31,29 @@ public class TaskServiceImpl implements TaskService {
 
     private final TaskRepository taskRepository;
 
+    private final TaskMapper taskMapper;
+
     private final TaskSearchRepository taskSearchRepository;
 
-    public TaskServiceImpl(TaskRepository taskRepository, TaskSearchRepository taskSearchRepository) {
+    public TaskServiceImpl(TaskRepository taskRepository, TaskMapper taskMapper, TaskSearchRepository taskSearchRepository) {
         this.taskRepository = taskRepository;
+        this.taskMapper = taskMapper;
         this.taskSearchRepository = taskSearchRepository;
     }
 
     /**
      * Save a task.
      *
-     * @param task the entity to save.
+     * @param taskDTO the entity to save.
      * @return the persisted entity.
      */
     @Override
-    public Task save(Task task) {
-        log.debug("Request to save Task : {}", task);
-        Task result = taskRepository.save(task);
-        taskSearchRepository.save(result);
+    public TaskDTO save(TaskDTO taskDTO) {
+        log.debug("Request to save Task : {}", taskDTO);
+        Task task = taskMapper.toEntity(taskDTO);
+        task = taskRepository.save(task);
+        TaskDTO result = taskMapper.toDto(task);
+        taskSearchRepository.save(task);
         return result;
     }
 
@@ -56,9 +64,11 @@ public class TaskServiceImpl implements TaskService {
      */
     @Override
     @Transactional(readOnly = true)
-    public List<Task> findAll() {
+    public List<TaskDTO> findAll() {
         log.debug("Request to get all Tasks");
-        return taskRepository.findAll();
+        return taskRepository.findAll().stream()
+            .map(taskMapper::toDto)
+            .collect(Collectors.toCollection(LinkedList::new));
     }
 
 
@@ -70,9 +80,10 @@ public class TaskServiceImpl implements TaskService {
      */
     @Override
     @Transactional(readOnly = true)
-    public Optional<Task> findOne(Long id) {
+    public Optional<TaskDTO> findOne(Long id) {
         log.debug("Request to get Task : {}", id);
-        return taskRepository.findById(id);
+        return taskRepository.findById(id)
+            .map(taskMapper::toDto);
     }
 
     /**
@@ -96,10 +107,11 @@ public class TaskServiceImpl implements TaskService {
      */
     @Override
     @Transactional(readOnly = true)
-    public List<Task> search(String query) {
+    public List<TaskDTO> search(String query) {
         log.debug("Request to search Tasks for query {}", query);
         return StreamSupport
             .stream(taskSearchRepository.search(queryStringQuery(query)).spliterator(), false)
+            .map(taskMapper::toDto)
         .collect(Collectors.toList());
     }
 }
