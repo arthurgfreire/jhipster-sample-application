@@ -45,6 +45,18 @@ public class CacheConfiguration {
     @Bean
     public JCacheManagerCustomizer cacheManagerCustomizer() {
         return cm -> {
+            createCache(cm, com.agf.projetobase.domain.Region.class.getName());
+            createCache(cm, com.agf.projetobase.domain.Country.class.getName());
+            createCache(cm, com.agf.projetobase.domain.Location.class.getName());
+            createCache(cm, com.agf.projetobase.domain.Department.class.getName());
+            createCache(cm, com.agf.projetobase.domain.Department.class.getName() + ".employees");
+            createCache(cm, com.agf.projetobase.domain.Task.class.getName());
+            createCache(cm, com.agf.projetobase.domain.Task.class.getName() + ".jobs");
+            createCache(cm, com.agf.projetobase.domain.Employee.class.getName());
+            createCache(cm, com.agf.projetobase.domain.Employee.class.getName() + ".jobs");
+            createCache(cm, com.agf.projetobase.domain.Job.class.getName());
+            createCache(cm, com.agf.projetobase.domain.Job.class.getName() + ".tasks");
+            createCache(cm, com.agf.projetobase.domain.JobHistory.class.getName());
             // jhipster-needle-ehcache-add-entry
         };
     }
